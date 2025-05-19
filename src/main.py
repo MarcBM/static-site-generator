@@ -21,6 +21,23 @@ def text_node_to_html_node(text_node):
       return LeafNode(tag="img", value="", props={"src": text_node.url, "alt": text_node.text})
     case _:
       raise ValueError(f"Unknown text type: {text_node.text_type}")
+    
+def split_nodes_delimiter(old_nodes, delimiter, text_type):
+  new_nodes = []
+  for node in old_nodes:
+    if node.text_type == TextType.TEXT:
+      text = node.text
+      parts = text.split(delimiter)
+      if len(parts) % 2 == 0:
+        raise ValueError("invalid markdown, odd number of delimiters")
+      for i in range(len(parts)):
+        if i % 2 == 0:
+          new_nodes.append(TextNode(parts[i], TextType.TEXT))
+        else:
+          new_nodes.append(TextNode(parts[i], text_type))
+    else:
+      new_nodes.append(node)
+  return new_nodes
   
 if __name__ == "__main__":
   main()
