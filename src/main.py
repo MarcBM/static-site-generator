@@ -48,7 +48,62 @@ def extract_markdown_images(text):
 def extract_markdown_links(text):
   pattern = r"(?:[^!]\[|^\[)(.*?)\]\((\S*?)\)"
   return re.findall(pattern, text)
+
+def split_nodes_links_images(old_nodes, text_type):
+  if text_type != TextType.LINK and text_type != TextType.IMAGE:
+    raise ValueError("text_type must be either LINK or IMAGE")
   
+  new_nodes = []
+  for node in old_nodes:
+    if node.text_type != TextType.TEXT:
+      new_nodes.append(node)
+      continue
+    text = node.text
+    extracts = []
+    if text_type == TextType.LINK:
+      extracts = extract_markdown_links(text)
+    elif text_type == TextType.IMAGE:
+      extracts = extract_markdown_images(text)
+    remaining_text = text
+    for i in range(len(extracts)):
+      extract = extracts[i]
+      extract_node = None
+      extract_string = ""
+      if text_type == TextType.LINK:
+        extract_node = TextNode(extract[0], TextType.LINK, extract[1])
+        extract_string = f"[{extract[0]}]({extract[1]})"
+      elif text_type == TextType.IMAGE:
+        extract_node = TextNode(extract[0], TextType.IMAGE, extract[1])
+        extract_string = f"![{extract[0]}]({extract[1]})"
+      parts = remaining_text.split(extract_string)
+      if len(parts) == 1:
+        if extract_string + parts[0] == remaining_text:
+          new_nodes.append(extract_node)
+          remaining_text = parts[0]
+        else:
+          new_nodes.append(TextNode(parts[0], TextType.TEXT))
+          new_nodes.append(extract_node)
+          remaining_text = ""
+      else:
+        if parts[0] != "":
+          new_nodes.append(TextNode(parts[0], TextType.TEXT))
+        new_nodes.append(extract_node)
+        remaining_text = parts[1]
+    if remaining_text != "":
+      new_nodes.append(TextNode(remaining_text, TextType.TEXT))
+    
+  if len(new_nodes) == 0:
+    new_nodes = old_nodes
+  return new_nodes
+
+def split_nodes_image(old_nodes):
+  new_nodes = split_nodes_links_images(old_nodes, TextType.IMAGE)
+  return new_nodes
+
+def split_nodes_link(old_nodes):
+  new_nodes = split_nodes_links_images(old_nodes, TextType.LINK)
+  return new_nodes
+        
   
 if __name__ == "__main__":
   main()
