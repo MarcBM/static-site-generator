@@ -9,6 +9,7 @@ from leafnode import LeafNode
 
 def main():
   copy_directory("static", "public")
+  generate_page("content/index.md", "template.html", "public/index.html")
   
 def copy_directory(source, destination):
   if os.path.exists(destination):
@@ -23,7 +24,32 @@ def copy_directory(source, destination):
       os.mkdir(new_destination)
       copy_directory(os.path.join(source, item), new_destination)
   
-  
+def extract_title(markdown):
+  lines = markdown.split("\n")
+  title = ""
+  for line in lines:
+    if line.startswith("# "):
+      title = line[2:]
+      break
+  title = title.strip()
+  if title == "":
+    raise ValueError("No title found in markdown")
+  return title
+
+def generate_page(from_path, template_path, dest_path):
+  print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+  with open(from_path, "r") as f:
+    content = f.read()
+  with open(template_path, "r") as f:
+    template = f.read()
+  htmlstring = markdown_to_htmlnode(content)
+  htmlstring = htmlstring.to_html()
+  title = extract_title(content)
+  htmlstring = template.replace("{{ Content }}", htmlstring)
+  htmlstring = htmlstring.replace("{{ Title }}", title)
+  with open(dest_path, "w") as f:
+    f.write(htmlstring)
+
 def text_node_to_html_node(text_node):
   match text_node.text_type:
     case TextType.TEXT:
