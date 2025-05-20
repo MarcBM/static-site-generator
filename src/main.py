@@ -30,9 +30,16 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
     if node.text_type == TextType.TEXT:
       text = node.text
       parts = text.split(delimiter)
+      if len(parts) == 1:
+        new_nodes.append(node)
+        continue
       if len(parts) % 2 == 0:
         raise ValueError("invalid markdown, odd number of delimiters")
       for i in range(len(parts)):
+        if i == 0 and parts[i] == "":
+          continue
+        if i == len(parts) - 1 and parts[i] == "":
+          continue
         if i % 2 == 0:
           new_nodes.append(TextNode(parts[i], TextType.TEXT))
         else:
@@ -103,6 +110,19 @@ def split_nodes_image(old_nodes):
 def split_nodes_link(old_nodes):
   new_nodes = split_nodes_links_images(old_nodes, TextType.LINK)
   return new_nodes
+
+def text_to_textnodes(text):
+  nodes = [TextNode(text, TextType.TEXT)]
+  nodes = split_nodes_link(nodes)
+  nodes = split_nodes_image(nodes)
+  delimiter_bold = "**"
+  delimiter_italic = "_"
+  delimiter_code = "`"
+  nodes = split_nodes_delimiter(nodes, delimiter_bold, TextType.BOLD)
+  nodes = split_nodes_delimiter(nodes, delimiter_italic, TextType.ITALIC)
+  nodes = split_nodes_delimiter(nodes, delimiter_code, TextType.CODE)
+  return nodes
+  
         
   
 if __name__ == "__main__":
