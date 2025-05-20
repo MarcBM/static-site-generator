@@ -1,4 +1,6 @@
 import re
+import os
+import shutil
 
 from blocktype import BlockType
 from parentnode import ParentNode
@@ -6,8 +8,21 @@ from textnode import TextNode, TextType
 from leafnode import LeafNode
 
 def main():
-  text_node = TextNode("This is some anchor text", TextType.LINK, "https://example.com")
-  print(text_node)
+  copy_directory("static", "public")
+  
+def copy_directory(source, destination):
+  if os.path.exists(destination):
+    shutil.rmtree(destination)
+    
+  os.mkdir(destination)
+  for item in os.listdir(source):
+    if os.path.isfile(os.path.join(source, item)):
+      shutil.copy(os.path.join(source, item), os.path.join(destination, item))
+    elif os.path.isdir(os.path.join(source, item)):
+      new_destination = os.path.join(destination, item)
+      os.mkdir(new_destination)
+      copy_directory(os.path.join(source, item), new_destination)
+  
   
 def text_node_to_html_node(text_node):
   match text_node.text_type:
