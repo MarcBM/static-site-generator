@@ -1,6 +1,7 @@
 import re
 import os
 import shutil
+import sys
 
 from blocktype import BlockType
 from parentnode import ParentNode
@@ -8,10 +9,15 @@ from textnode import TextNode, TextType
 from leafnode import LeafNode
 
 def main():
-  if os.path.exists("public"):
-    shutil.rmtree("public")
-  copy_directory("static", "public")
-  generate_pages("content", "public", "template.html")
+  basepath = sys.argv[1]
+  print(f"Basepath: {basepath}")
+  
+  public_dir = "docs"
+  
+  if os.path.exists(public_dir):
+    shutil.rmtree(public_dir)
+  copy_directory("static", public_dir)
+  generate_pages("content", public_dir, "template.html", basepath)
   
 def copy_directory(source, destination):
   if not os.path.exists(destination):
@@ -36,7 +42,7 @@ def extract_title(markdown):
     raise ValueError("No title found in markdown")
   return title
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath=None):
   print(f"Generating page from {from_path} to {dest_path} using {template_path}")
   with open(from_path, "r") as f:
     content = f.read()
@@ -47,21 +53,23 @@ def generate_page(from_path, template_path, dest_path):
   title = extract_title(content)
   htmlstring = template.replace("{{ Content }}", htmlstring)
   htmlstring = htmlstring.replace("{{ Title }}", title)
+  htmlstring = htmlstring.replace("href=\"/", f"href=\"{basepath}")
+  htmlstring = htmlstring.replace("src=\"/", f"src=\"{basepath}")
   with open(dest_path, "w") as f:
     f.write(htmlstring)
     
-def generate_pages(source, destination, template_path):
+def generate_pages(source, destination, template_path, basepath=None):
   if not os.path.exists(destination):
     os.mkdir(destination)
   for item in os.listdir(source):
     if os.path.isfile(os.path.join(source, item)):
       if item.endswith(".md"):
         dest_path = os.path.join(destination, item.replace(".md", ".html"))
-        generate_page(os.path.join(source, item), template_path, dest_path)
+        generate_page(os.path.join(source, item), template_path, dest_path, basepath)
     elif os.path.isdir(os.path.join(source, item)):
       new_destination = os.path.join(destination, item)
       os.mkdir(new_destination)
-      generate_pages(os.path.join(source, item), new_destination, template_path)
+      generate_pages(os.path.join(source, item), new_destination, template_path, basepath)
 
 def text_node_to_html_node(text_node):
   match text_node.text_type:
