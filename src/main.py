@@ -123,6 +123,17 @@ def text_to_textnodes(text):
   nodes = split_nodes_delimiter(nodes, delimiter_code, TextType.CODE)
   return nodes
   
+def markdown_to_blocks(markdown):
+  final_blocks = []
+  blocks = markdown.split("\n\n")
+  for block in blocks:
+    block = block.strip()
+    if block == "":
+      continue
+    final_blocks.append(block)
+    
+  return final_blocks
+  
         
   
 if __name__ == "__main__":
