@@ -8,14 +8,14 @@ from textnode import TextNode, TextType
 from leafnode import LeafNode
 
 def main():
+  if os.path.exists("public"):
+    shutil.rmtree("public")
   copy_directory("static", "public")
-  generate_page("content/index.md", "template.html", "public/index.html")
+  generate_pages("content", "public", "template.html")
   
 def copy_directory(source, destination):
-  if os.path.exists(destination):
-    shutil.rmtree(destination)
-    
-  os.mkdir(destination)
+  if not os.path.exists(destination):
+    os.mkdir(destination)
   for item in os.listdir(source):
     if os.path.isfile(os.path.join(source, item)):
       shutil.copy(os.path.join(source, item), os.path.join(destination, item))
@@ -49,6 +49,19 @@ def generate_page(from_path, template_path, dest_path):
   htmlstring = htmlstring.replace("{{ Title }}", title)
   with open(dest_path, "w") as f:
     f.write(htmlstring)
+    
+def generate_pages(source, destination, template_path):
+  if not os.path.exists(destination):
+    os.mkdir(destination)
+  for item in os.listdir(source):
+    if os.path.isfile(os.path.join(source, item)):
+      if item.endswith(".md"):
+        dest_path = os.path.join(destination, item.replace(".md", ".html"))
+        generate_page(os.path.join(source, item), template_path, dest_path)
+    elif os.path.isdir(os.path.join(source, item)):
+      new_destination = os.path.join(destination, item)
+      os.mkdir(new_destination)
+      generate_pages(os.path.join(source, item), new_destination, template_path)
 
 def text_node_to_html_node(text_node):
   match text_node.text_type:
