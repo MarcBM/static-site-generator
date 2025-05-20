@@ -1,5 +1,7 @@
 import re
 
+from blocktype import BlockType
+from parentnode import ParentNode
 from textnode import TextNode, TextType
 from leafnode import LeafNode
 
@@ -133,6 +135,74 @@ def markdown_to_blocks(markdown):
     final_blocks.append(block)
     
   return final_blocks
+
+def markdown_to_htmlnode(markdown):
+  blocks = markdown_to_blocks(markdown)
+  parent_node = ParentNode(tag="div", children=[])
+  for block in blocks:
+    blocktype = BlockType.block_to_block_type(block)
+    
+    if blocktype == BlockType.CODE:
+      block = block.replace("```", "").lstrip()
+      code_text_node = TextNode(block, TextType.CODE)
+      child_node = text_node_to_html_node(code_text_node)
+      child_node = ParentNode(tag="pre", children=[child_node])
+      
+    else:
+      child_node = text_to_children(block, blocktype)
+      
+    parent_node.children.append(child_node)
+  return parent_node
+
+def text_to_children(text, blocktype):
+  if blocktype == BlockType.PARAGRAPH:
+    text = text.replace("\n", " ")
+    text_nodes = text_to_textnodes(text)
+    children = []
+    for node in text_nodes:
+      child_node = text_node_to_html_node(node)
+      children.append(child_node)
+    return ParentNode(tag="p", children=children)
+  elif blocktype == BlockType.HEADING:
+    header_level = text.count("#")
+    header_text = text.lstrip("#").strip()
+    text_nodes = text_to_textnodes(header_text)
+    children = []
+    for node in text_nodes:
+      child_node = text_node_to_html_node(node)
+      children.append(child_node)
+    return ParentNode(tag=f"h{header_level}", children=children)
+  elif blocktype == BlockType.QUOTE:
+    quote_lines = [line.lstrip("> ").rstrip() for line in text.splitlines()]
+    quote_text = "\n".join(quote_lines).strip()
+    text_nodes = text_to_textnodes(quote_text)
+    children = []
+    for node in text_nodes:
+      child_node = text_node_to_html_node(node)
+      children.append(child_node)
+    return ParentNode(tag="blockquote", children=children)
+  elif blocktype == BlockType.UNORDERED_LIST:
+    list_items = [line.lstrip("- ").rstrip() for line in text.splitlines()]
+    children = []
+    for item in list_items:
+      text_nodes = text_to_textnodes(item)
+      item_children = []
+      for node in text_nodes:
+        child_node = text_node_to_html_node(node)
+        item_children.append(child_node)
+      children.append(ParentNode(tag="li", children=item_children))
+    return ParentNode(tag="ul", children=children)
+  elif blocktype == BlockType.ORDERED_LIST:
+    list_items = [re.sub(r'^\d+\.\s*', '', line).rstrip() for line in text.splitlines()]
+    children = []
+    for item in list_items:
+      text_nodes = text_to_textnodes(item)
+      item_children = []
+      for node in text_nodes:
+        child_node = text_node_to_html_node(node)
+        item_children.append(child_node)
+      children.append(ParentNode(tag="li", children=item_children))
+    return ParentNode(tag="ol", children=children)
   
         
   
